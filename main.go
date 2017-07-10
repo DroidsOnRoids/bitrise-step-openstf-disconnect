@@ -39,9 +39,9 @@ func main() {
 }
 
 func createConfigsModelFromEnvs() (configsModel, error) {
-	serials, err := parseJsonStringArraySafely(os.Getenv("stf_device_serial_list"))
+	serials, err := parseJSONStringArraySafely(os.Getenv("stf_device_serial_list"))
 	if err != nil {
-		return nil, err
+		return configsModel{}, err
 	}
 	return configsModel{
 		stfHostURL:        os.Getenv("stf_host_url"),
@@ -50,8 +50,11 @@ func createConfigsModelFromEnvs() (configsModel, error) {
 	}, nil
 }
 
-func parseJsonStringArraySafely(raw string) ([]string, error) {
+func parseJSONStringArraySafely(raw string) ([]string, error) {
 	var array []string
+	if raw == "" {
+		return []string{}, nil
+	}
 	if err := json.Unmarshal([]byte(raw), &array); err != nil {
 		return nil, fmt.Errorf("Input %s cannot be deserialized, error %s", raw, err)
 	}
@@ -60,8 +63,8 @@ func parseJsonStringArraySafely(raw string) ([]string, error) {
 
 func (configs configsModel) dump() {
 	log.Println("Config:")
-	log.Printf("STF host           : %s", configs.stfHostURL)
-	log.Printf("Device serials     : %s", configs.deviceSerials)
+	log.Printf("STF host: %s", configs.stfHostURL)
+	log.Printf("Device serials: %s", configs.deviceSerials)
 }
 
 func (configs *configsModel) validate() error {

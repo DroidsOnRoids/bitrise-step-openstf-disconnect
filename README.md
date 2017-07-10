@@ -1,6 +1,6 @@
 # OpenSTF Disconnect
 
-This step has to be inserted after ndroid instrumention and/or UI tests
+Bitrise step for [Open STF](https://openstf.io/) device disconnection
 
 
 ## How to use this Step
