@@ -39,7 +39,7 @@ func main() {
 }
 
 func createConfigsModelFromEnvs() (configsModel, error) {
-	serials, err := parseJsonStringArraySafely(os.Getenv("STF_DEVICE_SERIAL_LIST"))
+	serials, err := parseJsonStringArraySafely(os.Getenv("stf_device_serial_list"))
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +51,6 @@ func createConfigsModelFromEnvs() (configsModel, error) {
 }
 
 func parseJsonStringArraySafely(raw string) ([]string, error) {
-	if raw == "" {
-		return []string{}, nil
-	}
 	var array []string
 	if err := json.Unmarshal([]byte(raw), &array); err != nil {
 		return nil, fmt.Errorf("Input %s cannot be deserialized, error %s", raw, err)
