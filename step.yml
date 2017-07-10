@@ -1,5 +1,7 @@
 title: |-
   OpenSTF Disconnect
+summary: |
+  Disconnects from devices previously connected using Open STF Connect step
 description: |
   Disconnects from devices previously connected using Open STF Connect step
   This step has to be inserted after Android instrumention and/or UI tests.
