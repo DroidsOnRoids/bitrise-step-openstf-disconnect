@@ -1,9 +1,8 @@
 title: |-
-  OpenSTF Disconnect
+  Open STF Disconnect
 summary: |
-  Disconnects from devices previously connected using Open STF Connect step
+  Disconnects from devices from Open Smartphone Test Farm previously connected using Open STF Connect step
 description: |
-  Disconnects from devices previously connected using Open STF Connect step
   This step has to be inserted after Android instrumention and/or UI tests.
   It is recommended to set this step to be run always, even if previous step(s) failed to ensure that devices will be released.
   Otherwise they will be occupied until usage timeout exceeds. This setting is enabled by default.

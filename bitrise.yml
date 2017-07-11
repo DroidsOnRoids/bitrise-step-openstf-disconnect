@@ -4,12 +4,14 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 app:
   envs:
   - BITRISE_STEP_ID: openstf-disconnect
-  - BITRISE_STEP_VERSION: "0.0.1"
+  - BITRISE_STEP_VERSION: "0.0.2"
   - BITRISE_STEP_GIT_CLONE_URL: https://github.com/DroidsOnRoids/bitrise-step-openstf-disconnect
   - MY_STEPLIB_REPO_FORK_GIT_URL: $MY_STEPLIB_REPO_FORK_GIT_URL
 
 workflows:
   test:
+    envs:
+    - DEVICE_NUMBER_LIMIT: 2
     steps:
     - script:
         title: Install testing tools
@@ -44,6 +46,37 @@ workflows:
         title: Go test
         inputs:
         - content: go test
+    - openstf-connect:
+        title: Connect to farm
+        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
+        inputs:
+        - stf_host_url: $STF_HOST_URL
+        - stf_access_token: $STF_ACCESS_TOKEN
+        - device_filter: .sdk <= "22"
+        - device_number_limit: $DEVICE_NUMBER_LIMIT
+        - adb_key: $ADB_KEY
+        - adb_key_pub: $ADB_KEY_PUB
+    - script:
+        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
+        title: Assert that there are connected devices
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            [[ $(adb devices | grep device$ -c) -eq "${DEVICE_NUMBER_LIMIT}" ]]
+    - path::./:
+        title: Step Test
+        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
+        inputs:
+        - stf_host_url: $STF_HOST_URL
+        - stf_access_token: $STF_ACCESS_TOKEN
+    - script:
+        title: Assert that there are no connected devices
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            [[ $(adb devices | grep device$ -c) -eq 0 ]]
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library
