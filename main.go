@@ -33,7 +33,7 @@ func main() {
 	for _, serial := range configs.deviceSerials {
 		log.Printf("Releasing device %s", serial)
 		if err := removeDeviceFromControl(configs, serial); err != nil {
-			log.Fatalf("Could not remove device from control, error: %s", err)
+			log.Printf("Could not remove device from control, error: %s", err)
 		}
 	}
 }
