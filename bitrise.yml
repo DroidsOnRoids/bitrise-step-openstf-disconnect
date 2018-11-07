@@ -1,85 +1,13 @@
-format_version: 3
+format_version: "3"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
-
+project_type: ""
 app:
   envs:
   - BITRISE_STEP_ID: openstf-disconnect
-  - BITRISE_STEP_VERSION: "0.0.4"
   - BITRISE_STEP_GIT_CLONE_URL: https://github.com/DroidsOnRoids/bitrise-step-openstf-disconnect
   - MY_STEPLIB_REPO_FORK_GIT_URL: $MY_STEPLIB_REPO_FORK_GIT_URL
 
 workflows:
-  test:
-    envs:
-    - DEVICE_NUMBER_LIMIT: 2
-    steps:
-    - script:
-        title: Install testing tools
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -ex
-            # Check for unhandled errors
-            go get -u -v github.com/kisielk/errcheck
-            # Go lint
-            go get -u -v github.com/golang/lint/golint
-    - script:
-        title: Err check
-        inputs:
-        - content: errcheck -asserts=true -blank=true $GOLIST_WITHOUT_VENDOR
-    - script:
-        title: Go lint
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -e
-            while read -r line; do
-              echo "-> Linting: $line"
-              golint_out="$(golint $line)"
-              if [[ "${golint_out}" != "" ]] ; then
-                echo "=> Golint issues found:"
-                echo "${golint_out}"
-                exit 1
-              fi
-            done <<< "$GOLIST_WITHOUT_VENDOR"
-    - script:
-        title: Go test
-        inputs:
-        - content: go test
-    - openstf-connect:
-        title: Connect to farm
-        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
-        inputs:
-        - stf_host_url: $STF_HOST_URL
-        - stf_access_token: $STF_ACCESS_TOKEN
-        - device_filter: .sdk <= "22"
-        - device_number_limit: $DEVICE_NUMBER_LIMIT
-        - adb_key: $ADB_KEY
-        - adb_key_pub: $ADB_KEY_PUB
-    - script:
-        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
-        title: Assert that there are connected devices
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -e
-            [[ $(adb devices | grep device$ -c) -eq "${DEVICE_NUMBER_LIMIT}" ]]
-    - path::./:
-        title: Step Test
-        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
-        inputs:
-        - stf_host_url: $STF_HOST_URL
-        - stf_access_token: $STF_ACCESS_TOKEN
-    - script:
-        title: Assert that there are no connected devices
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -e
-            [[ $(adb devices | grep device$ -c) -eq 0 ]]
-
-  # ----------------------------------------------------------------
-  # --- workflows to Share this step into a Step Library
   audit-this-step:
     steps:
     - script:
@@ -88,14 +16,7 @@ workflows:
             #!/bin/bash
             set -ex
             stepman audit --step-yml ./step.yml
-
   share-this-step:
-    envs:
-      # if you want to share this step into a StepLib
-      - MY_STEPLIB_REPO_FORK_GIT_URL: $MY_STEPLIB_REPO_FORK_GIT_URL
-      - BITRISE_STEP_ID: $BITRISE_STEP_ID
-      - BITRISE_STEP_VERSION: $BITRISE_STEP_VERSION
-      - BITRISE_STEP_GIT_CLONE_URL: $BITRISE_STEP_GIT_CLONE_URL
     description: |-
       If this is the first time you try to share a Step you should
       first call: $ bitrise share
@@ -119,6 +40,11 @@ workflows:
       the way described in the guide printed at the end of the process.
     before_run:
     - audit-this-step
+    envs:
+    - MY_STEPLIB_REPO_FORK_GIT_URL: $MY_STEPLIB_REPO_FORK_GIT_URL
+    - BITRISE_STEP_ID: $BITRISE_STEP_ID
+    - BITRISE_STEP_VERSION: $BITRISE_STEP_VERSION
+    - BITRISE_STEP_GIT_CLONE_URL: $BITRISE_STEP_GIT_CLONE_URL
     steps:
     - script:
         inputs:
@@ -126,5 +52,45 @@ workflows:
             #!/bin/bash
             set -ex
             bitrise share start -c "${MY_STEPLIB_REPO_FORK_GIT_URL}"
-            bitrise share create --stepid "${BITRISE_STEP_ID}" --tag "${BITRISE_STEP_VERSION}" --git "${BITRISE_STEP_GIT_CLONE_URL}"
+            bitrise share create --stepid "${BITRISE_STEP_ID}" --tag "$(git describe --tags --exact-match)" --git "${BITRISE_STEP_GIT_CLONE_URL}"
             bitrise share finish
+  test:
+    envs:
+    - DEVICE_NUMBER_LIMIT: 2
+    steps:
+    - go-list: {}
+    - errcheck: {}
+    - golint: {}
+    - go-test: {}
+    - openstf-connect:
+        title: Connect to farm
+        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
+        inputs:
+        - stf_host_url: $STF_HOST_URL
+        - stf_access_token: $STF_ACCESS_TOKEN
+        - device_filter: ""
+        - device_number_limit: $DEVICE_NUMBER_LIMIT
+        - adb_key: $ADB_KEY
+        - adb_key_pub: $ADB_KEY_PUB
+    - script:
+        title: Assert that there are connected devices
+        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            adb devices
+            [[ $(adb devices | grep device$ -c) -eq "${DEVICE_NUMBER_LIMIT}" ]]
+    - path::./:
+        title: Step Test
+        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
+        inputs:
+        - stf_host_url: $STF_HOST_URL
+        - stf_access_token: $STF_ACCESS_TOKEN
+    - script:
+        title: Assert that there are no connected devices
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            [[ $(adb devices | grep device$ -c) -eq 0 ]]

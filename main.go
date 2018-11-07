@@ -1,14 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"time"
-	"log"
-	"strings"
-	"errors"
-	"os"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/bitrise-io/go-utils/command"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 type configsModel struct {
@@ -32,6 +33,9 @@ func main() {
 	}
 	for _, serial := range configs.deviceSerials {
 		log.Printf("Releasing device %s", serial)
+		if err := disconnectDevice(serial); err != nil {
+			log.Printf("Could not disconeect device from ADB: %s", err)
+		}
 		if err := removeDeviceFromControl(configs, serial); err != nil {
 			log.Printf("Could not remove device from control, error: %s", err)
 		}
@@ -44,9 +48,9 @@ func createConfigsModelFromEnvs() (configsModel, error) {
 		return configsModel{}, err
 	}
 	return configsModel{
-		stfHostURL:        os.Getenv("stf_host_url"),
-		stfAccessToken:    os.Getenv("stf_access_token"),
-		deviceSerials:     serials,
+		stfHostURL:     os.Getenv("stf_host_url"),
+		stfAccessToken: os.Getenv("stf_access_token"),
+		deviceSerials:  serials,
 	}, nil
 }
 
@@ -56,7 +60,7 @@ func parseJSONStringArraySafely(raw string) ([]string, error) {
 		return []string{}, nil
 	}
 	if err := json.Unmarshal([]byte(raw), &array); err != nil {
-		return nil, fmt.Errorf("Input %s cannot be deserialized, error %s", raw, err)
+		return nil, fmt.Errorf("input %s cannot be deserialized, error %s", raw, err)
 	}
 	return array, nil
 }
@@ -69,7 +73,7 @@ func (configs configsModel) dump() {
 
 func (configs *configsModel) validate() error {
 	if !strings.HasPrefix(configs.stfHostURL, "http") {
-		return fmt.Errorf("Invalid STF host: %s", configs.stfHostURL)
+		return fmt.Errorf("invalid STF host: %s", configs.stfHostURL)
 	}
 	if configs.stfAccessToken == "" {
 		return errors.New("STF access token cannot be empty")
@@ -78,11 +82,11 @@ func (configs *configsModel) validate() error {
 }
 
 func removeDeviceFromControl(configs configsModel, serial string) error {
-	req, err := http.NewRequest("DELETE", configs.stfHostURL + userDevicesEndpoint + "/" + serial, nil)
+	req, err := http.NewRequest("DELETE", configs.stfHostURL+userDevicesEndpoint+"/"+serial, nil)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer " + configs.stfAccessToken)
+	req.Header.Set("Authorization", "Bearer "+configs.stfAccessToken)
 	req.Header.Set("Content-Type", "application/json")
 	response, err := client.Do(req)
 	if err != nil {
@@ -92,7 +96,15 @@ func removeDeviceFromControl(configs configsModel, serial string) error {
 		return err
 	}
 	if response.StatusCode != 200 {
-		return fmt.Errorf("Request failed, status: %s", response.Status)
+		return fmt.Errorf("request failed, status: %s", response.Status)
+	}
+	return nil
+}
+
+func disconnectDevice(serial string) error {
+	output, err := command.RunCommandAndReturnCombinedStdoutAndStderr("adb", "disconnect", serial)
+	if err != nil {
+		return fmt.Errorf("%s, error: %s", output, err)
 	}
 	return nil
 }
