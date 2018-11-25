@@ -1,12 +1,1 @@
-# 0.0.4
-- Added ADB disconnect to release process
-
-# 0.0.3
-- Device releasing error made non-fatal so remaining devices can be released
-
-# 0.0.2
-- Description and summary typofixes
-- Step tests updated
-
-# 0.0.1
-- Initial release
+See [GitHub Releases](https://github.com/DroidsOnRoids/bitrise-step-openstf-disconnect/releases)
