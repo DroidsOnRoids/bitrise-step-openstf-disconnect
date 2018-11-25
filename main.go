@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bitrise-io/go-utils/command"
-	"log"
+	"github.com/bitrise-io/go-utils/log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -20,23 +21,35 @@ type configsModel struct {
 
 const userDevicesEndpoint = "/api/v1/user/devices"
 
-var client = &http.Client{Timeout: time.Second * 10}
+var adbDeviceLineRegex = regexp.MustCompile(`([\w.:]+)\s+device$`)
+var client = &http.Client{Timeout: time.Second * 30}
 
 func main() {
 	configs, err := createConfigsModelFromEnvs()
 	if err != nil {
-		log.Fatalf("Could not create config, error: %s", err)
+		log.Errorf("Could not create config, error: %s", err)
+		os.Exit(1)
 	}
 	configs.dump()
 	if err := configs.validate(); err != nil {
-		log.Fatalf("Could not validate config, error: %s", err)
+		log.Errorf("Could not validate config, error: %s", err)
+		os.Exit(1)
 	}
-	for _, serial := range configs.deviceSerials {
-		log.Printf("Releasing device %s", serial)
-		if err := disconnectDevice(serial); err != nil {
-			log.Printf("Could not disconeect device from ADB: %s", err)
+
+	adbDevicesList := getAdbDevicesList()
+
+	adbDevices := extractDevicesListFromAdbOutput(adbDevicesList)
+	connectedDevices := mapSerialsToAdbDevices(adbDevices)
+
+	for _, serialToDisconnect := range configs.deviceSerials {
+		log.Printf("Releasing device %s", serialToDisconnect)
+
+		device := connectedDevices[serialToDisconnect]
+		if err := disconnectDevice(device); err != nil {
+			log.Printf("Could not disconnect device from ADB: %s", err)
 		}
-		if err := removeDeviceFromControl(configs, serial); err != nil {
+
+		if err := removeDeviceFromControl(configs, serialToDisconnect); err != nil {
 			log.Printf("Could not remove device from control, error: %s", err)
 		}
 	}
@@ -66,9 +79,9 @@ func parseJSONStringArraySafely(raw string) ([]string, error) {
 }
 
 func (configs configsModel) dump() {
-	log.Println("Config:")
-	log.Printf("STF host: %s", configs.stfHostURL)
-	log.Printf("Device serials: %s", configs.deviceSerials)
+	log.Infof("Config:")
+	log.Infof("STF host: %s", configs.stfHostURL)
+	log.Infof("Device serials: %s", configs.deviceSerials)
 }
 
 func (configs *configsModel) validate() error {
@@ -101,10 +114,43 @@ func removeDeviceFromControl(configs configsModel, serial string) error {
 	return nil
 }
 
-func disconnectDevice(serial string) error {
-	output, err := command.RunCommandAndReturnCombinedStdoutAndStderr("adb", "disconnect", serial)
+func disconnectDevice(device string) error {
+	output, err := command.RunCommandAndReturnCombinedStdoutAndStderr("adb", "disconnect", device)
 	if err != nil {
 		return fmt.Errorf("%s, error: %s", output, err)
 	}
 	return nil
+}
+
+func getAdbDevicesList() string {
+	output, err := command.RunCommandAndReturnStdout("adb", "devices")
+	if err != nil {
+		log.Warnf("Could not get ADB devices, error: %s", err)
+	}
+	return output
+}
+
+func extractDevicesListFromAdbOutput(adbDevicesOutput string) []string {
+	lines := strings.Split(adbDevicesOutput, "\n")
+
+	var devices []string
+	for _, line := range lines {
+		if submatch := adbDeviceLineRegex.FindStringSubmatch(line); submatch != nil {
+			devices = append(devices, submatch[1])
+		}
+	}
+	return devices
+}
+
+func mapSerialsToAdbDevices(adbDevices []string) map[string]string {
+	serialsToDevicesMap := make(map[string]string)
+	for _, device := range adbDevices {
+		serial, err := command.RunCommandAndReturnStdout("adb", "-s", device, "shell", "getprop ro.serialno")
+		if err != nil {
+			log.Warnf("Could not get serial for device %s, error: %s", device, err)
+		} else {
+			serialsToDevicesMap[serial] = device
+		}
+	}
+	return serialsToDevicesMap
 }
