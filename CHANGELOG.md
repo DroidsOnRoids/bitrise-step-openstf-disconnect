@@ -1,3 +1,6 @@
+# 0.0.4
+- Added ADB disconnect to release process
+
 # 0.0.3
 - Device releasing error made non-fatal so remaining devices can be released
 
