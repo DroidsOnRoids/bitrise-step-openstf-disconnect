@@ -4,7 +4,7 @@ project_type: ""
 app:
   envs:
   - BITRISE_STEP_ID: openstf-disconnect
-  - BITRISE_STEP_GIT_CLONE_URL: https://github.com/DroidsOnRoids/bitrise-step-openstf-disconnect
+  - BITRISE_STEP_GIT_CLONE_URL: https://github.com/DroidsOnRoids/bitrise-step-openstf-disconnect.git
   - MY_STEPLIB_REPO_FORK_GIT_URL: $MY_STEPLIB_REPO_FORK_GIT_URL
 
 workflows:
