@@ -73,6 +73,7 @@ workflows:
         - adb_key_pub: $ADB_KEY_PUB
     - script:
         title: Assert that there are connected devices
+        run_if: '{{getenv "STF_HOST_URL" | ne ""}}'
         inputs:
         - content: |-
             #!/usr/bin/env bash
