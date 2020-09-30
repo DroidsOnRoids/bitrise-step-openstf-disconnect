@@ -1,7 +1,7 @@
 title: |-
-  Open STF Disconnect
+  Device Farmer/Open STF Disconnect
 summary: |
-  Disconnects from devices from Open Smartphone Test Farm previously connected using Open STF Connect step
+  Disconnects from devices from Device Farmer/Open Smartphone Test Farm previously connected using Device Farmer/Open STF Connect step
 description: |
   This step has to be inserted after Android instrumention and/or UI tests.
   It is recommended to set this step to be run always, even if previous step(s) failed to ensure that devices will be released.
@@ -16,6 +16,7 @@ project_type_tags:
    - react-native
    - cordova
    - ionic
+   - flutter
 
 type_tags:
   - test
@@ -43,7 +44,7 @@ inputs:
       title: STF API access token
       description: |
         STF API access token. Go to `Settings->Keys` on your STF web UI to generate one.
-        Read more about tokens in [OpenSTF API documentation](https://github.com/openstf/stf/blob/master/doc/API.md#authentication).
+        Read more about tokens in [STF API documentation](https://github.com/devicefarmer/stf/blob/master/doc/API.md#authentication).
       is_required: true
       is_expand: true
       is_sensitive: true
@@ -56,4 +57,3 @@ inputs:
         Empty input is treated like empty array.
       is_required: true
       is_expand: true
-

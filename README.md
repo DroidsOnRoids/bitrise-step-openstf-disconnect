@@ -1,6 +1,6 @@
 # OpenSTF Disconnect
 
-Bitrise step for [Open STF](https://openstf.io/) device disconnection
+Bitrise step for [Device Farmer](https://devicefarmer.github.io/) or [Open STF](https://openstf.io/) device disconnection
 
 
 ## How to use this Step
